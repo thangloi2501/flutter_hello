@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'api/open_weather_api.dart';
 
 void main() {
   runApp(MyApp());
@@ -48,9 +49,10 @@ class MyHomePage extends StatefulWidget {
 class _MyHomePageState extends State<MyHomePage> {
   int _counter = 0;
 
-  final textHolder = TextEditingController();
+  final resultHolder = TextEditingController();
+  final cityHolder   = TextEditingController();
 
-  void _clearText() {
+  void _clearAction() {
     // setState(() {
     //   // This call to setState tells the Flutter framework that something has
     //   // changed in this State, which causes it to rerun the build method below
@@ -59,7 +61,35 @@ class _MyHomePageState extends State<MyHomePage> {
     //   // called again, and so nothing would appear to happen.
     //   _counter++;
     // });
-    textHolder.clear();
+    resultHolder.clear();
+    cityHolder.clear();
+  }
+
+  void _saveAction() => showDialog<String>(
+    context: context,
+    builder: (BuildContext context) => AlertDialog(
+      title: const Text('Sorry!'),
+      content: const Text('No action implemented at the moment.'),
+      actions: <Widget>[
+        TextButton(
+          onPressed: () => Navigator.pop(context, 'Cancel'),
+          child: const Text('Cancel'),
+        ),
+        TextButton(
+          onPressed: () => Navigator.pop(context, 'OK'),
+          child: const Text('OK'),
+        ),
+      ],
+    ),
+  );
+
+  void _callWeatherApi() {
+    var api = new OpenWeatherApi();
+    api.getCurrentWeather(cityHolder.value.text).then((weather) {
+      resultHolder.text = weather.toString();
+    }, onError: (error) {
+      resultHolder.text = error.toString();
+    });
   }
 
   @override
@@ -96,6 +126,22 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
+        Image(image: AssetImage('images/weather-icon.png')),
+            TextField(
+              decoration: new InputDecoration(
+                  border: new OutlineInputBorder(
+                      borderSide: new BorderSide(color: Colors.teal)),
+                  hintText: 'Enter city name to load weather...',
+                  helperText: '',
+                  labelText: 'City',
+                  prefixIcon: const Icon(
+                    Icons.add_location,
+                    color: Colors.black,
+                  ),
+                  prefixText: ' ',
+                  suffixStyle: const TextStyle(color: Colors.brown)),
+              controller: cityHolder,
+            ),
             Theme(
               data: new ThemeData(
                 primaryColor: Colors.redAccent,
@@ -106,31 +152,18 @@ class _MyHomePageState extends State<MyHomePage> {
                     border: new OutlineInputBorder(
                         borderSide: new BorderSide(color: Colors.teal)),
                     hintText: 'Please put anything here',
-                    helperText: 'Keep it short, this is just a demo.',
+                    helperText: 'Blah blah blah...',
                     labelText: 'Put your note here...',
                     prefixIcon: const Icon(
-                      Icons.person,
+                      Icons.airplanemode_on,
                       color: Colors.green,
                     ),
                     prefixText: ' ',
                     suffixStyle: const TextStyle(color: Colors.green)),
-                controller: textHolder,
+                controller: resultHolder,
                 keyboardType: TextInputType.multiline,
                 maxLines: null,
               ),
-            ),
-            TextField(
-              decoration: new InputDecoration(
-                  border: new OutlineInputBorder(
-                      borderSide: new BorderSide(color: Colors.teal)),
-                  hintText: 'Note ID',
-                  labelText: 'Note ID',
-                  prefixIcon: const Icon(
-                    Icons.vpn_key,
-                    color: Colors.black,
-                  ),
-                  prefixText: ' ',
-                  suffixStyle: const TextStyle(color: Colors.brown)),
             ),
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
@@ -139,21 +172,21 @@ class _MyHomePageState extends State<MyHomePage> {
                   style: TextButton.styleFrom(
                     primary: Colors.black87, // foreground
                   ),
-                  onPressed: () {},
+                  onPressed: _callWeatherApi,
                   child: Text('LOAD'),
                 ),
                 TextButton(
                   style: TextButton.styleFrom(
                     primary: Colors.green, // foreground
                   ),
-                  onPressed: () {},
+                  onPressed: _saveAction,
                   child: Text('SAVE'),
                 ),
                 TextButton(
                   style: TextButton.styleFrom(
                     primary: Colors.red, // foreground
                   ),
-                  onPressed: _clearText,
+                  onPressed: _clearAction,
                   child: Text('CLEAR'),
                 ),
               ],
