@@ -8,7 +8,7 @@ class OpenWeatherApi {
 
   Future<CurrentWeather> getCurrentWeather(String location) async {
     final url =
-        "https://api.openweathermap.org/data/2.5/weather?q=$location&APPID=$_API_KEY";
+        "https://api.openweathermap.org/data/2.5/weather?q=$location&units=metric&APPID=$_API_KEY";
     final response = await http.get(Uri.parse(url));
     final responseJson = json.decode(response.body);
     return new CurrentWeather.fromJson(responseJson);

@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_hello/api/accu_weather_api.dart';
 import 'api/open_weather_api.dart';
+import 'model/city.dart';
 
 void main() {
   runApp(MyApp());
@@ -47,45 +49,47 @@ class MyHomePage extends StatefulWidget {
 }
 
 class _MyHomePageState extends State<MyHomePage> {
-  int _counter = 0;
+  Future<List<City>>? _cities;
+  City? _selectedCity;
+
+  @override
+  void initState() {
+    super.initState();
+
+    _cities = _loadCityData();
+  }
+
+  Future<List<City>> _loadCityData() async {
+    return new AccuWeatherApi().getCities(150);
+  }
 
   final resultHolder = TextEditingController();
-  final cityHolder   = TextEditingController();
 
   void _clearAction() {
-    // setState(() {
-    //   // This call to setState tells the Flutter framework that something has
-    //   // changed in this State, which causes it to rerun the build method below
-    //   // so that the display can reflect the updated values. If we changed
-    //   // _counter without calling setState(), then the build method would not be
-    //   // called again, and so nothing would appear to happen.
-    //   _counter++;
-    // });
     resultHolder.clear();
-    cityHolder.clear();
   }
 
   void _saveAction() => showDialog<String>(
-    context: context,
-    builder: (BuildContext context) => AlertDialog(
-      title: const Text('Sorry!'),
-      content: const Text('No action implemented at the moment.'),
-      actions: <Widget>[
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'Cancel'),
-          child: const Text('Cancel'),
+        context: context,
+        builder: (BuildContext context) => AlertDialog(
+          title: const Text('Sorry!'),
+          content: const Text('No action implemented at the moment.'),
+          actions: <Widget>[
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'Cancel'),
+              child: const Text('Cancel'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(context, 'OK'),
+              child: const Text('OK'),
+            ),
+          ],
         ),
-        TextButton(
-          onPressed: () => Navigator.pop(context, 'OK'),
-          child: const Text('OK'),
-        ),
-      ],
-    ),
-  );
+      );
 
-  void _callWeatherApi() {
+  void _callWeatherApi(String city) {
     var api = new OpenWeatherApi();
-    api.getCurrentWeather(cityHolder.value.text).then((weather) {
+    api.getCurrentWeather(city).then((weather) {
       resultHolder.text = weather.toString();
     }, onError: (error) {
       resultHolder.text = error.toString();
@@ -126,21 +130,48 @@ class _MyHomePageState extends State<MyHomePage> {
           // horizontal).
           mainAxisAlignment: MainAxisAlignment.center,
           children: <Widget>[
-        Image(image: AssetImage('images/weather-icon.png')),
-            TextField(
-              decoration: new InputDecoration(
-                  border: new OutlineInputBorder(
-                      borderSide: new BorderSide(color: Colors.teal)),
-                  hintText: 'Enter city name to load weather...',
-                  helperText: '',
-                  labelText: 'City',
-                  prefixIcon: const Icon(
-                    Icons.add_location,
-                    color: Colors.black,
-                  ),
-                  prefixText: ' ',
-                  suffixStyle: const TextStyle(color: Colors.brown)),
-              controller: cityHolder,
+            Image(image: AssetImage('images/weather-icon.png')),
+            FutureBuilder<List<City>>(
+              future: _cities,
+              builder: (context, snapshot) {
+                switch (snapshot.connectionState) {
+                  case ConnectionState.waiting: return Text('Loading....');
+                  default:
+                    if (snapshot.hasError)
+                      return Text('Error: ${snapshot.error}');
+                    else
+                      return DropdownButton<City>(
+                      hint: Text("Select city"),
+                      value: _selectedCity,
+                      onChanged: (City? value) {
+                        setState(() {
+                          _selectedCity = value;
+                        });
+                        _callWeatherApi(value!.toFullName());
+                      },
+                      items: snapshot.data!.map((City city) {
+                        return DropdownMenuItem<City>(
+                          value: city,
+                          child: Row(
+                            children: <Widget>[
+                              const Icon(
+                                Icons.arrow_right,
+                                color: Colors.blue,
+                              ),
+                              SizedBox(
+                                width: 10,
+                              ),
+                              Text(
+                                city.toFullName(),
+                                style: TextStyle(color: Colors.black),
+                              ),
+                            ],
+                          ),
+                        );
+                      }).toList(),
+                    );
+                }
+              },
             ),
             Theme(
               data: new ThemeData(
@@ -168,23 +199,26 @@ class _MyHomePageState extends State<MyHomePage> {
             Row(
               mainAxisAlignment: MainAxisAlignment.center,
               children: <Widget>[
+                // TextButton(
+                //   style: TextButton.styleFrom(
+                //     primary: Colors.black, // foreground
+                //     backgroundColor: Colors.blue,
+                //   ),
+                //   onPressed: _callWeatherApi,
+                //   child: Text('LOAD'),
+                // ),
                 TextButton(
                   style: TextButton.styleFrom(
-                    primary: Colors.black87, // foreground
-                  ),
-                  onPressed: _callWeatherApi,
-                  child: Text('LOAD'),
-                ),
-                TextButton(
-                  style: TextButton.styleFrom(
-                    primary: Colors.green, // foreground
+                    primary: Colors.black, // foreground
+                    backgroundColor: Colors.green,
                   ),
                   onPressed: _saveAction,
                   child: Text('SAVE'),
                 ),
                 TextButton(
                   style: TextButton.styleFrom(
-                    primary: Colors.red, // foreground
+                    primary: Colors.black, // foreground
+                    backgroundColor: Colors.red,
                   ),
                   onPressed: _clearAction,
                   child: Text('CLEAR'),
